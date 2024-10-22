@@ -1,0 +1,32 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/total_time/count": {
+            "get": {
+                "description": "Получение всех интервалов",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Count total time"
+                ],
+                "summary": "Get total count time",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "list"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        }
+    }
+}
