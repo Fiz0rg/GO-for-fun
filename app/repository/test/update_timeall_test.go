@@ -28,7 +28,7 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 
 	countTimeRepo := repository.NewCountTimeRepository(db)
 
-	status_code, err := countTimeRepo.UpdateTimeAll()
+	status_code, err := countTimeRepo.TimeCalculation()
 	if err != nil {
 		t.Fatalf("Something wrong in repo, %v", err)
 	}
@@ -39,7 +39,10 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	arrangeResult := getArrangeResult(arrangeIntervalList, arrangeTimeAllList)
 	resultRepo := getTimeAllRecords(ctx, db, t)
 
+	intervalList := getIntervalsRecords(ctx, db, t)
+
 	assert.Equal(t, arrangeResult, resultRepo)
+	assert.Empty(t, intervalList)
 
 	t.Cleanup(func() {
 		collectionList := []mongo.Collection{intervalCollection, timeAllCollection}
@@ -61,21 +64,22 @@ func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll) []mod
 	return timeAll
 }
 
-// func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.Interval {
-// 	collection := resource.DB.Collection("Interval")
-// 	records, err := collection.Find(ctx, bson.M{})
-// 	if err != nil {
-// 		t.Fatalf("Err getting interval records, %v", err)
-// 	}
+func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.Interval {
+	pipeline := repository.FormPipeline()
+	collection := resource.DB.Collection("Interval")
+	records, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		t.Fatalf("Err getting interval records, %v", err)
+	}
 
-// 	var res []model.Interval
-// 	err = records.All(ctx, &res)
-// 	if err != nil {
-// 		fmt.Printf("Decode interval Error, %v", err)
-// 	}
+	var res []model.Interval
+	err = records.All(ctx, &res)
+	if err != nil {
+		fmt.Printf("Decode interval Error, %v", err)
+	}
 
-// 	return res
-// }
+	return res
+}
 
 func getTimeAllRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.TimeAll {
 	collection := resource.DB.Collection("TimeAll")
