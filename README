@@ -1,4 +1,25 @@
 Download depends ->  go mod tiny
 
+Up mongo docker -> docker run -d -p 27017:27017 --name mongodb mongo
+
+Create .env file in root directory
+
+--------- ENVs -----------
+
+ENV=LOCAL
+
+# Application
+
+MONGODB_HOST=127.0.0.1
+MONGODB_PORT=27017
+
+MONGODB_DATABASE=timeappdb
+
+MONGODB_COLLECTION_USER=User
+MONGODB_COLLECTION_CATEGORY=Category
+MONGODB_COLLECTION_INTERVAL=Interval
+MONGODB_COLLECTION_TIMEDAY=TimeDay
+MONGODB_COLLECTION_TIMEALL=TimeAll
+
 
 Run app ->   go run main.go
