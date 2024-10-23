@@ -1,4 +1,4 @@
-package test
+package fixture
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func genIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.Interval, mongo.Collection) {
+func GenIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.Interval, mongo.Collection) {
 	endAt := int64(500)
 	intervalCollections := resource.DB.Collection("Interval")
 	intervalsInPipline := []model.Interval{
@@ -61,7 +61,7 @@ func genIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.In
 	return intervalsInPipline, *intervalCollections
 }
 
-func genTimeAllsInMongo(resource *db.Resource, ctx context.Context) ([]model.TimeAll, mongo.Collection) {
+func GenTimeAllsInMongo(resource *db.Resource, ctx context.Context) ([]model.TimeAll, mongo.Collection) {
 	timeAllCollection := resource.DB.Collection("TimeAll")
 	itemList := []model.TimeAll{
 		{
