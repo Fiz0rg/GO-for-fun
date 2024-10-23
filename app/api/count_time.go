@@ -23,7 +23,7 @@ func ApplyCountTimeAPI(app *gin.RouterGroup, resource *db.Resource) {
 // @Router /total_time/count [get]
 func updateTimeAllCollection(intervalRepo repository.UpdateTimeAllCollectionRepository) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		code, err := intervalRepo.UpdateTimeAll()
+		code, err := intervalRepo.TimeCalculation()
 
 		if err != nil {
 			log.Printf("Error update time all repo: %v", err)

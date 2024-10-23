@@ -24,7 +24,7 @@ type UpdateTimeAllCollectionRepositoryImpl struct {
 }
 
 type UpdateTimeAllCollectionRepository interface {
-	UpdateTimeAll() (int, error)
+	TimeCalculation() (int, error)
 	getIntervalRecords(ctx context.Context) []model.UserCategory
 	getTimeAllRecords(ctx context.Context) []model.TimeAll
 }
@@ -39,71 +39,46 @@ func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionReposi
 	return countTimeRepo
 }
 
-func (repo *UpdateTimeAllCollectionRepositoryImpl) UpdateTimeAll() (int, error) {
+func updateTimeAllByTimeDays() {
+	panic("NOT IMPLEMENTED")
+}
+
+func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() (int, error) {
 	ctx, cancel := InitContext()
 	defer cancel()
+	var wg sync.WaitGroup
 
 	userCategoryInterals := repo.getIntervalRecords(ctx)
 
-	// Размер пакета, в котором будет 100 записей (можно изменить кол-во)
-	batchSize := 100
-	var wg sync.WaitGroup
-
-	// Канал горутины, которая будет обрабатывать отправленные в неё пакеты batch
-	updatesChannel := make(chan []mongo.WriteModel, 10)
-	// Канал для ошибок
-	errorChannel := make(chan error, 10)
-
-	// Устанавливаем воркеры, которые будут работать с bulk (осторожно с ядрами)
-	numWorkers := 3
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			performBulkWrite(ctx, repo.timeAllCollection, <-updatesChannel, &wg, errorChannel)
-		}()
+	u := updateTimeAllByIntervals(ctx, &wg, repo.timeAllCollection, userCategoryInterals)
+	if u != nil {
+		log.Panicf("Fail operation by updateTimeAllByIntervals, %v", u)
 	}
 
-	// Запихиваем операции с коллекцией в пакеты и отправляем обрабатываться
-	var updates []mongo.WriteModel
-	for i, item := range userCategoryInterals {
-
-		filter := bson.M{
-			"user_uuid":     item.UserUUID,
-			"category_uuid": item.CategoryUUID,
-		}
-		update := bson.M{
-			"$inc": bson.M{"time_total": item.TotalIntervalTime},
-		}
-
-		updateModel := mongo.NewUpdateOneModel().SetFilter(filter).SetUpdate(update).SetUpsert(true)
-		updates = append(updates, updateModel)
-
-		// Отправка пакета (batch) на выполнение при достижении размера
-		if len(updates) == batchSize {
-			updatesChannel <- updates
-			updates = nil
-		}
-
-		// Просто чтобы видна была работа крч
-		if i%10000 == 0 {
-			fmt.Printf("Processed %d results\n", i)
-		}
+	d := deleteUnnecessaryIntervals(ctx, &wg, repo.intervalCollection, userCategoryInterals)
+	if d != nil {
+		log.Panicf("Fail operation by deleteUnnecessaryIntervals, %v", d)
 	}
 
-	// отправляем то, что не отправилось
-	if len(updates) > 0 {
-		updatesChannel <- updates
-	}
-	// закрываем канал только когда всё закрыто
-	close(updatesChannel)
-	// ждём завершения всех воркеров
 	wg.Wait()
-
 	return http.StatusOK, nil
 
 }
 
-func performBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, wg *sync.WaitGroup, errorChannel chan<- error) {
+func deletePerfomBulkWrite(ctx context.Context, collection *mongo.Collection, deletions []mongo.WriteModel, waitGroup *sync.WaitGroup, errorDeleteChannel chan error) {
+	defer waitGroup.Done()
+	if len(deletions) > 0 {
+		bulkOpt := options.BulkWrite().SetOrdered(false)
+		_, err := collection.BulkWrite(ctx, deletions, bulkOpt)
+		if err != nil {
+			errorDeleteChannel <- fmt.Errorf("BulkWrite error: %v", err)
+		} else {
+			fmt.Printf("Bulk write completed for %d deleted\n", len(deletions))
+		}
+	}
+}
+
+func updatePerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, wg *sync.WaitGroup, errorChannel chan<- error) {
 	defer wg.Done()
 	if len(updates) > 0 {
 		bulkOpts := options.BulkWrite().SetOrdered(false) // неупорядоченная обработка для монги
@@ -117,7 +92,7 @@ func performBulkWrite(ctx context.Context, collection *mongo.Collection, updates
 }
 
 func (repo *UpdateTimeAllCollectionRepositoryImpl) getIntervalRecords(ctx context.Context) []model.UserCategory {
-	pipeline := formPipeline()
+	pipeline := FormPipeline()
 	cursor, err := repo.intervalCollection.Aggregate(ctx, pipeline)
 
 	if err != nil {
@@ -151,10 +126,94 @@ func (repo *UpdateTimeAllCollectionRepositoryImpl) getTimeAllRecords(ctx context
 	}
 	cursor.Close(ctx)
 	return timeAllList
-
 }
 
-func formPipeline() mongo.Pipeline {
+func deleteUnnecessaryIntervals(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	interval_collection *mongo.Collection,
+	userCategoryIntervals []model.UserCategory,
+) error {
+	deleteChannel := make(chan []mongo.WriteModel, 5)
+	errorDeleteChannel := make(chan error, 10)
+
+	numDeleteWorkers := 2
+	for i := 0; i < numDeleteWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			deletePerfomBulkWrite(ctx, interval_collection, <-deleteChannel, wg, errorDeleteChannel)
+		}()
+	}
+
+	batchSize := 100
+
+	var deleteIntervals []mongo.WriteModel
+	for _, item := range userCategoryIntervals {
+		for _, intervalUUID := range item.UUIDList {
+			intervalfilter := bson.M{"uuid": intervalUUID}
+			stmt := mongo.NewDeleteOneModel().SetFilter(intervalfilter)
+			deleteIntervals = append(deleteIntervals, stmt)
+		}
+		if len(deleteIntervals) == batchSize {
+			deleteChannel <- deleteIntervals
+			deleteIntervals = nil
+		}
+	}
+	if len(deleteIntervals) > 0 {
+		deleteChannel <- deleteIntervals
+	}
+
+	close(deleteChannel)
+	return nil
+}
+
+func updateTimeAllByIntervals(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	timeAllCollection *mongo.Collection,
+	userCategoryInterals []model.UserCategory,
+) error {
+	batchSize := 50
+
+	updatesChannel := make(chan []mongo.WriteModel, 5)
+	errorUpdateChannel := make(chan error, 10)
+
+	numUpdateWorkers := 2
+	for i := 0; i < numUpdateWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			updatePerformBulkWrite(ctx, timeAllCollection, <-updatesChannel, wg, errorUpdateChannel)
+		}()
+	}
+	var updateTimeAll []mongo.WriteModel
+	for _, item := range userCategoryInterals {
+
+		timeAllFilter := bson.M{
+			"user_uuid":     item.UserUUID,
+			"category_uuid": item.CategoryUUID,
+		}
+		update := bson.M{
+			"$inc": bson.M{"time_total": item.TotalIntervalTime},
+		}
+
+		updateRequest := mongo.NewUpdateOneModel().SetFilter(timeAllFilter).SetUpdate(update).SetUpsert(true)
+		updateTimeAll = append(updateTimeAll, updateRequest)
+
+		if len(updateTimeAll) == batchSize {
+			updatesChannel <- updateTimeAll
+			updateTimeAll = nil
+		}
+	}
+
+	if len(updateTimeAll) > 0 {
+		updatesChannel <- updateTimeAll
+	}
+
+	close(updatesChannel)
+	return nil
+}
+
+func FormPipeline() mongo.Pipeline {
 	pipeline := mongo.Pipeline{
 
 		// Stage 1: Фильтруем записи (убираем записи без end_at и последние в группе)
