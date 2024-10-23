@@ -3,12 +3,13 @@ package test
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"testing"
 	"time"
 	"time_app/app/model"
 	"time_app/app/repository"
 	"time_app/db"
+	"time_app/test/fixture"
+	"time_app/test/test_config"
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,16 +17,14 @@ import (
 )
 
 func TestUpdateTimeAllByIntervals(t *testing.T) {
-	db, err := testInitResource()
-	if err != nil {
-		t.Fatalf("Failed to connect MONGO, %v", err)
-	}
-
 	ctx, cancel := repository.InitContext()
 	defer cancel()
-
-	arrangeIntervalList, intervalCollection := genIntervalsInMongo(db, ctx)
-	arrangeTimeAllList, timeAllCollection := genTimeAllsInMongo(db, ctx)
+	db := test_config.TestDB
+	if db == nil {
+		t.Fatal("DATABASE IS NIL")
+	}
+	arrangeIntervalList, intervalCollection := fixture.GenIntervalsInMongo(db, ctx)
+	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllsInMongo(db, ctx)
 
 	countTimeRepo := repository.NewCountTimeRepository(db)
 
@@ -45,11 +44,7 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	t.Cleanup(func() {
 		collectionList := []mongo.Collection{intervalCollection, timeAllCollection}
 		time.Sleep(300 * time.Microsecond)
-		cleanupTestData(collectionList)
-
-		pc, _, _, _ := runtime.Caller(0) // Получаем PC текущей функции
-		funcName := runtime.FuncForPC(pc).Name()
-		printConsoleTestPass(funcName)
+		test_config.CleanupTestData(collectionList)
 	})
 }
 
@@ -66,21 +61,21 @@ func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll) []mod
 	return timeAll
 }
 
-func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.Interval {
-	collection := resource.DB.Collection("Interval")
-	records, err := collection.Find(ctx, bson.M{})
-	if err != nil {
-		t.Fatalf("Err getting interval records, %v", err)
-	}
+// func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.Interval {
+// 	collection := resource.DB.Collection("Interval")
+// 	records, err := collection.Find(ctx, bson.M{})
+// 	if err != nil {
+// 		t.Fatalf("Err getting interval records, %v", err)
+// 	}
 
-	var res []model.Interval
-	err = records.All(ctx, &res)
-	if err != nil {
-		fmt.Printf("Decode interval Error, %v", err)
-	}
+// 	var res []model.Interval
+// 	err = records.All(ctx, &res)
+// 	if err != nil {
+// 		fmt.Printf("Decode interval Error, %v", err)
+// 	}
 
-	return res
-}
+// 	return res
+// }
 
 func getTimeAllRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.TimeAll {
 	collection := resource.DB.Collection("TimeAll")

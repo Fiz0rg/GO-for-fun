@@ -1,4 +1,4 @@
-package test
+package test_config
 
 import (
 	"context"
@@ -18,8 +18,9 @@ type config struct {
 }
 
 func LoadTestConfig() (*config, error) {
-	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
+
+	if err := godotenv.Load("../../../.env"); err != nil {
+		log.Panicf("ERROR GETTING ENV, %v", err)
 	}
 	return &config{
 		Database: loadDatabaseConfig(),
@@ -40,27 +41,18 @@ func loadDatabaseConfig() DatabaseConfig {
 	}
 }
 
-// type Resource struct {
-// 	DB *mongo.Database
-// }
-
-func testInitResource() (*db.Resource, error) { // хз норм ли так (папка не тестов)
+func TestInitResource() (*db.Resource, error) { // хз норм ли так (папка не тестов)
 	config, err_conf := LoadTestConfig()
 	if err_conf != nil {
 		log.Printf("Something wrong with config, %v", err_conf)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Err get config for database, %v", err)
-	}
-
 	dbName := config.Database.MONGODB_DATABASE
-	// dbPort := config.Database.MONGODB_PORT
-	// dbHost := config.Database.MONGODB_HOST
+	dbPort := config.Database.MONGODB_PORT
+	dbHost := config.Database.MONGODB_HOST
 
-	URI := "mongodb://127.0.0.1:27017/authSource=timeappdb&retryWrites=true&w=majority"
+	URI := fmt.Sprintf("mongodb://%s:%s/authSource=timeappdb&retryWrites=true&w=majority", dbHost, dbPort)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URI))
 
