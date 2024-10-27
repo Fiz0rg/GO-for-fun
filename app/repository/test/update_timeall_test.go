@@ -28,12 +28,9 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 
 	countTimeRepo := repository.NewCountTimeRepository(db)
 
-	status_code, err := countTimeRepo.TimeCalculation()
+	err := countTimeRepo.TimeCalculation()
 	if err != nil {
 		t.Fatalf("Something wrong in repo, %v", err)
-	}
-	if status_code != 200 {
-		t.Fatalf("Status code != 200, %v", err)
 	}
 
 	arrangeResult := getArrangeResult(arrangeIntervalList, arrangeTimeAllList)

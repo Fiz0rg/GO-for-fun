@@ -1,17 +1,28 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"time_app/app"
-	"time_app/config"
+
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
 
-	config, err := config.LoadConfig()
-	if err != nil {
-		log.Printf("Something wrong with config, %v", err)
-	}
+	a := app.RepoInit()
 
-	app.StartGin(config)
+	c := cron.New()
+	c.AddFunc("* * * * *", func() {
+		err := a.TimeCalculation()
+		if err != nil {
+			fmt.Printf("Time Calculation Error, %v", err)
+		} else {
+			fmt.Printf("Task was completed!")
+		}
+	})
+
+	c.Start()
+
+	select {}
+
 }

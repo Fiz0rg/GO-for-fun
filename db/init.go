@@ -35,7 +35,7 @@ func InitResource(config *config.Config) (*Resource, error) {
 	if allNotEmpty(dbPASSWORD, dbUSERNAME) {
 		authData = fmt.Sprintf("%v:%v@", dbUSERNAME, dbPASSWORD)
 	}
-	uriForm := fmt.Sprintf("mongodb://%s%s:%s?authSource=%s&retryWrites=true&w=majority", authData, dbHOST, dbPORT, dbName)
+	uriForm := fmt.Sprintf("mongodb://%s%s:%s/authSource=%s&retryWrites=true&w=majority", authData, dbHOST, dbPORT, dbName)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uriForm))
 
