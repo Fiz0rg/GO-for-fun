@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 	"time_app/app/model"
 	"time_app/db"
 
@@ -44,7 +45,7 @@ func updateTimeAllByTimeDays() {
 }
 
 func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() (int, error) {
-	ctx, cancel := InitContext()
+	ctx, cancel := InitContext(1 * time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 

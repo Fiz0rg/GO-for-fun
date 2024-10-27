@@ -17,7 +17,7 @@ import (
 )
 
 func TestUpdateTimeAllByIntervals(t *testing.T) {
-	ctx, cancel := repository.InitContext()
+	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
 	db := test_config.TestDB
 	if db == nil {
