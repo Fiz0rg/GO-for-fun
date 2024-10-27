@@ -52,7 +52,7 @@ func TestInitResource() (*db.Resource, error) { // хз норм ли так (п
 	dbPort := config.Database.MONGODB_PORT
 	dbHost := config.Database.MONGODB_HOST
 
-	URI := fmt.Sprintf("mongodb://%s:%s/authSource=timeappdb&retryWrites=true&w=majority", dbHost, dbPort)
+	URI := fmt.Sprintf("mongodb://%s:%s/authSource=%s&retryWrites=true&w=majority", dbHost, dbPort, dbName)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URI))
 

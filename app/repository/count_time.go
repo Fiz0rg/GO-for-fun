@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
+	"time"
 	"time_app/app/model"
 	"time_app/db"
 
@@ -24,7 +24,7 @@ type UpdateTimeAllCollectionRepositoryImpl struct {
 }
 
 type UpdateTimeAllCollectionRepository interface {
-	TimeCalculation() (int, error)
+	TimeCalculation() error
 	getIntervalRecords(ctx context.Context) []model.UserCategory
 	getTimeAllRecords(ctx context.Context) []model.TimeAll
 }
@@ -43,8 +43,8 @@ func updateTimeAllByTimeDays() {
 	panic("NOT IMPLEMENTED")
 }
 
-func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() (int, error) {
-	ctx, cancel := InitContext()
+func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() error {
+	ctx, cancel := InitContext(1 * time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 
@@ -61,7 +61,7 @@ func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() (int, error
 	}
 
 	wg.Wait()
-	return http.StatusOK, nil
+	return nil
 
 }
 

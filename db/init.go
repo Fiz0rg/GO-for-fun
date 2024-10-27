@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"time"
 	"time_app/config"
 
@@ -17,15 +18,26 @@ type Resource struct {
 }
 
 func InitResource(config *config.Config) (*Resource, error) {
-	dbName := config.Database.MONGODB_DATABASE
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Err get config for database, %v", err)
 	}
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://127.0.0.1:27017/authSource=timeappdb&retryWrites=true&w=majority"))
+	dbName := config.Database.MONGODB_DATABASE
+	dbHOST := config.Database.MONGODB_HOST
+	dbPORT := config.Database.MONGODB_PORT
+	dbUSERNAME := url.QueryEscape(config.Database.MONGODB_USERNAME)
+	dbPASSWORD := url.QueryEscape(config.Database.MONGODB_PASSWORD)
+
+	authData := ""
+	if allNotEmpty(dbPASSWORD, dbUSERNAME) {
+		authData = fmt.Sprintf("%v:%v@", dbUSERNAME, dbPASSWORD)
+	}
+	uriForm := fmt.Sprintf("mongodb://%s%s:%s/authSource=%s&retryWrites=true&w=majority", authData, dbHOST, dbPORT, dbName)
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uriForm))
 
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
@@ -41,4 +53,13 @@ func InitResource(config *config.Config) (*Resource, error) {
 	defer cancel()
 
 	return &Resource{DB: client.Database(dbName)}, nil
+}
+
+func allNotEmpty(values ...string) bool {
+	for _, v := range values {
+		if v == "" {
+			return false
+		}
+	}
+	return true
 }
