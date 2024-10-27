@@ -22,4 +22,5 @@ MONGODB_COLLECTION_TIMEDAY=TimeDay
 MONGODB_COLLECTION_TIMEALL=TimeAll
 
 
-Run app ->   go run main.go
+Run app ->   go run main.go 
+(You have to wait unless 1 min before cron will work)
