@@ -2,7 +2,8 @@ Download depends ->  go mod tiny
 
 Up mongo docker -> docker run -d -p 27017:27017 --name mongodb mongo
 
-Create .env file in root directory
+Create logfile.log in root directory
+Create .env file   in root directory
 
 --------- ENVs -----------
 
@@ -22,5 +23,16 @@ MONGODB_COLLECTION_TIMEDAY=TimeDay
 MONGODB_COLLECTION_TIMEALL=TimeAll
 
 
-Run app ->   go run main.go 
-(You have to wait unless 1 min before cron will work)
+----------------------------------------------------------------------
+
+Setup cron
+
+command line: crontab -e
+
+inscribe in file ->>>         * * * * * /absolute_path/run_main.sh
+and save it
+
+(
+    You have to wait unless 1 min before cron will work
+    Or you can setup our own timedata
+)
