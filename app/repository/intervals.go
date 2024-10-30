@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (repo *UpdateTimeAllCollectionRepositoryImpl) getIntervalRecords(ctx context.Context) []model.Interval {
+func (repo *UpdateTimeRepositoryImpl) getIntervalRecords(ctx context.Context) []model.Interval {
 	pipeline := FormPipeline()
 	cursor, err := repo.intervalCollection.Aggregate(ctx, pipeline)
 
@@ -115,7 +115,7 @@ func FormPipeline() mongo.Pipeline {
 				{Key: "end_at", Value: bson.D{{Key: "$ne", Value: nil}}},
 			}},
 		},
-		// Stage 2: Declare the last record
+		// Stage 2: Sort by user_uuid, category_uuid, and started_at
 		{
 			{Key: "$sort", Value: bson.D{
 				{Key: "user_uuid", Value: 1},
@@ -123,7 +123,7 @@ func FormPipeline() mongo.Pipeline {
 				{Key: "started_at", Value: 1},
 			}},
 		},
-		// Stage 3: Group and ingore the last record
+		// Stage 3: Group and collect records per user_uuid and category_uuid
 		{
 			{Key: "$group", Value: bson.D{
 				{Key: "_id", Value: bson.D{
@@ -133,17 +133,35 @@ func FormPipeline() mongo.Pipeline {
 				{Key: "records", Value: bson.D{{Key: "$push", Value: "$$ROOT"}}},
 			}},
 		},
-		// Stage 4: Delete the last record from result
+		// Stage 4: Filter groups with more than one record
 		{
-			{Key: "$project", Value: bson.D{
-				{Key: "records", Value: bson.D{{Key: "$slice", Value: bson.A{"$records", 0, bson.D{{Key: "$subtract", Value: bson.A{bson.D{{Key: "$size", Value: "$records"}}, 1}}}}}}},
+			{Key: "$match", Value: bson.D{
+				{Key: "records.1", Value: bson.D{{Key: "$exists", Value: true}}},
 			}},
 		},
-		// Stage 5: Unpack
+		// Stage 5: Slice to exclude the last record
+		{
+			{Key: "$project", Value: bson.D{
+				{Key: "records", Value: bson.D{
+					{Key: "$slice", Value: bson.A{
+						"$records",
+						0,
+						bson.D{{Key: "$max", Value: bson.A{
+							bson.D{{Key: "$subtract", Value: bson.A{
+								bson.D{{Key: "$size", Value: "$records"}},
+								1,
+							}}},
+							1,
+						}}},
+					}},
+				}},
+			}},
+		},
+		// Stage 6: Unwind records
 		{
 			{Key: "$unwind", Value: "$records"},
 		},
-		// Stage 6: Return records
+		// Stage 7: Return records
 		{
 			{Key: "$replaceRoot", Value: bson.D{{Key: "newRoot", Value: "$records"}}},
 		},

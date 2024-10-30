@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time_app/app/repository/model"
 
@@ -14,6 +15,7 @@ import (
 func updateTimeAllPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, wg *sync.WaitGroup, errorChannel chan<- error) {
 	defer wg.Done()
 	if len(updates) > 0 {
+		log.Printf("UPDATES IS GETE, %v", len(updates))
 		bulkOpts := options.BulkWrite().SetOrdered(false) // неупорядоченная обработка для монги
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
 		if err != nil {
@@ -34,22 +36,23 @@ func updateTimeAllCollection(
 	userCategoryMap := make(map[string]model.UserCategory)
 
 	for _, i := range interals {
+		log.Printf("INTERVAL , %v", i)
 		key := i.UserUUID + i.CategoryUUID
 		if item, exists := userCategoryMap[key]; exists {
 			item.TotalIntervalTime += (*i.EndAt - i.StartedAt)
 			userCategoryMap[key] = item
 		} else {
 			newItem := model.UserCategory{
-				UserUUID:          item.UserUUID,
-				CategoryUUID:      item.CategoryUUID,
-				TotalIntervalTime: item.TotalIntervalTime,
+				UserUUID:          i.UserUUID,
+				CategoryUUID:      i.CategoryUUID,
+				TotalIntervalTime: *i.EndAt - i.StartedAt,
 			}
+			log.Printf("newITEM , %v", newItem)
 			userCategoryMap[key] = newItem
 		}
 	}
-
+	log.Printf("USERCAT, %v", userCategoryMap)
 	batchSize := 50
-
 	updatesChannel := make(chan []mongo.WriteModel, 5)
 	errorUpdateChannel := make(chan error, 10)
 

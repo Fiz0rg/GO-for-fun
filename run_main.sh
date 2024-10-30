@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# load envs
 
 cd "$(dirname "$0")"
 
