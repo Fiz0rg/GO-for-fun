@@ -20,6 +20,9 @@ func GenIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.In
 			StartedAt:    400,
 			EndAt:        &endAt,
 		},
+	}
+
+	intervalsOutPipline := []model.Interval{
 		{
 			UUID:         "uuid-2",
 			UserUUID:     "user-1",
@@ -27,9 +30,6 @@ func GenIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.In
 			StartedAt:    400,
 			EndAt:        &endAt,
 		},
-	}
-
-	intervalsOutPipline := []model.Interval{
 		{
 			UUID:         "uuid-3",
 			UserUUID:     "user-1",
@@ -38,9 +38,9 @@ func GenIntervalsInMongo(resource *db.Resource, ctx context.Context) ([]model.In
 			EndAt:        &endAt,
 		},
 		{
-			UUID:         "uuid-3",
+			UUID:         "uuid-4",
 			UserUUID:     "user-1",
-			CategoryUUID: "category-002",
+			CategoryUUID: "category-003",
 			StartedAt:    400,
 			EndAt:        nil,
 		},

@@ -3,6 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"log"
 	"testing"
 	"time"
 	"time_app/app/repository"
@@ -32,7 +33,6 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Something wrong in repo, %v", err)
 	}
-
 	arrangeResult := getArrangeResult(arrangeIntervalList, arrangeTimeAllList)
 	resultRepo := getTimeAllRecords(ctx, db, t)
 
@@ -54,7 +54,7 @@ func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll) []mod
 	for i := range timeAll {
 		for _, interval := range intervalTimeSubtraction {
 			if timeAll[i].UserUUID == interval.UserUUID && timeAll[i].CategoryUUID == interval.CategoryUUID {
-				timeAll[i].TimeTotal += int(interval.TimeTotal)
+				timeAll[i].TimeTotal += interval.TimeTotal
 			}
 		}
 	}
@@ -94,14 +94,8 @@ func getTimeAllRecords(ctx context.Context, resource *db.Resource, t *testing.T)
 	return res
 }
 
-type TimeAll struct {
-	UserUUID     string
-	CategoryUUID string
-	TimeTotal    int64
-}
-
-func subtractionIntervalsTime(intervals []model.Interval) []TimeAll {
-	timeMap := make(map[string]*TimeAll)
+func subtractionIntervalsTime(intervals []model.Interval) []model.TimeAll {
+	timeMap := make(map[string]*model.TimeAll)
 
 	for _, interval := range intervals {
 		if interval.EndAt == nil {
@@ -110,7 +104,7 @@ func subtractionIntervalsTime(intervals []model.Interval) []TimeAll {
 
 		key := fmt.Sprintf("%s-%s", interval.UserUUID, interval.CategoryUUID)
 		if _, exists := timeMap[key]; !exists {
-			timeMap[key] = &TimeAll{
+			timeMap[key] = &model.TimeAll{
 				UserUUID:     interval.UserUUID,
 				CategoryUUID: interval.CategoryUUID,
 				TimeTotal:    0,
@@ -119,9 +113,10 @@ func subtractionIntervalsTime(intervals []model.Interval) []TimeAll {
 		timeMap[key].TimeTotal += *interval.EndAt - interval.StartedAt
 	}
 
-	var timeTotals []TimeAll
+	var timeTotals []model.TimeAll
 	for _, timeAll := range timeMap {
 		timeTotals = append(timeTotals, *timeAll)
 	}
+	log.Printf("RESULT , %v", timeTotals)
 	return timeTotals
 }

@@ -11,7 +11,7 @@ import (
 
 var CountTimeRepo UpdateTimeAllCollectionRepository
 
-type UpdateTimeAllCollectionRepositoryImpl struct {
+type UpdateTimeRepositoryImpl struct {
 	resource           *db.Resource
 	intervalCollection *mongo.Collection
 	timeAllCollection  *mongo.Collection
@@ -26,7 +26,7 @@ func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionReposi
 	timeDayCollection := resource.DB.Collection("TimeDay")
 	intervalCollection := resource.DB.Collection("Interval")
 	timeAllCollection := resource.DB.Collection("TimeAll")
-	countTimeRepo := &UpdateTimeAllCollectionRepositoryImpl{
+	countTimeRepo := &UpdateTimeRepositoryImpl{
 		resource:           resource,
 		intervalCollection: intervalCollection,
 		timeAllCollection:  timeAllCollection,
@@ -35,13 +35,12 @@ func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionReposi
 	return countTimeRepo
 }
 
-func (repo *UpdateTimeAllCollectionRepositoryImpl) TimeCalculation() error {
+func (repo *UpdateTimeRepositoryImpl) TimeCalculation() error {
 	ctx, cancel := InitContext(1 * time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 
 	intervals := repo.getIntervalRecords(ctx)
-
 	updateTimeAllCollection(ctx, &wg, repo.timeAllCollection, intervals)
 	updateTimeDayCollection(ctx, &wg, repo.timeDayCollection, intervals)
 

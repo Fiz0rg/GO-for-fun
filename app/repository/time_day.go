@@ -25,7 +25,7 @@ func updateTimeDayCollection(
 
 	numUpdateWorkers := 2
 	for i := 0; i < numUpdateWorkers; i++ {
-		waitGroup.Add(i)
+		waitGroup.Add(1)
 		go func() {
 			updateTimeDayPerformBulkWrite(ctx, collection, <-updatesChanes, waitGroup, errorChanel)
 		}()
@@ -51,6 +51,7 @@ func updateTimeDayCollection(
 		}
 	}
 	if len(updateTimeDay) > 0 {
+
 		updatesChanes <- updateTimeDay
 	}
 	close(updatesChanes)
