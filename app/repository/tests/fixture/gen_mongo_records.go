@@ -3,7 +3,7 @@ package fixture
 import (
 	"context"
 	"log"
-	"time_app/app/model"
+	"time_app/app/repository/model"
 	"time_app/db"
 
 	"go.mongodb.org/mongo-driver/mongo"

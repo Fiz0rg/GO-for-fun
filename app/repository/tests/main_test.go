@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time_app/test/test_config"
+	test_config "time_app/tests"
 )
 
 func TestMain(m *testing.M) {
