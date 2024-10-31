@@ -1,4 +1,4 @@
-package repository
+package mongodb
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 	"time"
+	"time_app/app/repository"
 	"time_app/app/repository/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -98,7 +99,7 @@ func splitIntervals(intervals []model.Interval) []model.Interval {
 				UserUUID:     i.UserUUID,
 				CategoryUUID: i.CategoryUUID,
 				StartedAt:    current.Unix(),
-				EndAt:        intPtr(endOfDay.Unix()),
+				EndAt:        repository.IntPtr(endOfDay.Unix()),
 			}
 			subIntervals = append(subIntervals, i)
 			current = endOfDay.Add(time.Second)

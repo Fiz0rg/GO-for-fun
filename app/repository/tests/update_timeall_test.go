@@ -8,6 +8,7 @@ import (
 	"time"
 	"time_app/app/repository"
 	"time_app/app/repository/model"
+	"time_app/app/repository/mongodb"
 	"time_app/app/repository/tests/fixture"
 	"time_app/db"
 	test_config "time_app/tests"
@@ -27,7 +28,7 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	arrangeIntervalList, intervalCollection := fixture.GenIntervalsInMongo(db, ctx)
 	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllsInMongo(db, ctx)
 
-	countTimeRepo := repository.NewCountTimeRepository(db)
+	countTimeRepo := mongodb.NewCountTimeRepository(db)
 
 	err := countTimeRepo.TimeCalculation()
 	if err != nil {
@@ -62,7 +63,7 @@ func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll) []mod
 }
 
 func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.Interval {
-	pipeline := repository.FormPipeline()
+	pipeline := mongodb.FormPipeline()
 	collection := resource.DB.Collection("Interval")
 	records, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {

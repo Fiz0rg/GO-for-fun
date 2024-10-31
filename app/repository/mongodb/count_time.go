@@ -1,9 +1,10 @@
-package repository
+package mongodb
 
 import (
 	"log"
 	"sync"
 	"time"
+	"time_app/app/repository"
 	"time_app/db"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -36,7 +37,7 @@ func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionReposi
 }
 
 func (repo *UpdateTimeRepositoryImpl) TimeCalculation() error {
-	ctx, cancel := InitContext(1 * time.Second)
+	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
 	var wg sync.WaitGroup
 

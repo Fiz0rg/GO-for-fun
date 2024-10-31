@@ -10,6 +10,6 @@ func InitContext(timeout time.Duration) (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-func intPtr(i int64) *int64 {
+func IntPtr(i int64) *int64 {
 	return &i
 }
