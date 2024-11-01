@@ -18,15 +18,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestUpdateTimeAllByIntervals(t *testing.T) {
+func TestTimeAllByIntervals(t *testing.T) {
 	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
 	db := test_config.TestDB
 	if db == nil {
 		t.Fatal("DATABASE IS NIL")
 	}
-	arrangeIntervalList, intervalCollection := fixture.GenIntervalsInMongo(db, ctx)
-	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllsInMongo(db, ctx)
+	arrangeIntervalList, intervalCollection := fixture.GenIntervalsData(db, ctx)
+	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllData(db, ctx)
 
 	countTimeRepo := mongodb.NewCountTimeRepository(db)
 
@@ -43,9 +43,8 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	assert.Empty(t, intervalList)
 
 	t.Cleanup(func() {
-		collectionList := []mongo.Collection{intervalCollection, timeAllCollection}
 		time.Sleep(300 * time.Microsecond)
-		test_config.CleanupTestData(collectionList)
+		test_config.CleanupTestData(db)
 	})
 }
 
