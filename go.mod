@@ -7,6 +7,10 @@ require (
 	go.mongodb.org/mongo-driver v1.16.1
 )
 
+require github.com/google/uuid v1.6.0
+
+require github.com/brianvoe/gofakeit v3.18.0+incompatible
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect

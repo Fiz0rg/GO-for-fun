@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"log"
 	"testing"
 	"time"
 	"time_app/app/repository"
@@ -15,18 +14,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func TestUpdateTimeAllByIntervals(t *testing.T) {
+func TestTimeAllByIntervals(t *testing.T) {
 	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
 	db := test_config.TestDB
 	if db == nil {
 		t.Fatal("DATABASE IS NIL")
 	}
-	arrangeIntervalList, intervalCollection := fixture.GenIntervalsInMongo(db, ctx)
-	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllsInMongo(db, ctx)
+	var amount int = 2
+
+	user := fixture.CreateUser(db, ctx)
+	categoryList := fixture.CreateManyCategories(db, ctx, &user, &amount)
+
+	arrangeIntervalList := fixture.CreateManyIntervals(db, ctx, &user, &categoryList, &amount)
+	arrangeTimeAllList := fixture.CreateManyTimeAll(db, ctx, &user, &categoryList, &amount)
 
 	countTimeRepo := mongodb.NewCountTimeRepository(db)
 
@@ -43,9 +46,8 @@ func TestUpdateTimeAllByIntervals(t *testing.T) {
 	assert.Empty(t, intervalList)
 
 	t.Cleanup(func() {
-		collectionList := []mongo.Collection{intervalCollection, timeAllCollection}
 		time.Sleep(300 * time.Microsecond)
-		test_config.CleanupTestData(collectionList)
+		test_config.CleanupTestData(db)
 	})
 }
 
@@ -118,6 +120,5 @@ func subtractionIntervalsTime(intervals []model.Interval) []model.TimeAll {
 	for _, timeAll := range timeMap {
 		timeTotals = append(timeTotals, *timeAll)
 	}
-	log.Printf("RESULT , %v", timeTotals)
 	return timeTotals
 }
