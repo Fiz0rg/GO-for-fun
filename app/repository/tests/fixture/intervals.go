@@ -2,7 +2,6 @@ package fixture
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
 	"time_app/app/repository/model"
@@ -14,10 +13,17 @@ import (
 func CreateOneInterval(
 	resource *db.Resource,
 	ctx context.Context,
+	user *model.User,
+	category *model.Category,
 	i *model.Interval,
 ) model.Interval {
+
+	if user == nil || category == nil {
+		panic("You have to provide correct params")
+	}
+
 	if i == nil {
-		i = defaultInterval()
+		i = defaultInterval(user, category)
 	}
 	c := resource.DB.Collection("Interval")
 	insert, err := c.InsertOne(ctx, i)
@@ -35,7 +41,7 @@ func CreateOneInterval(
 	return res
 }
 
-func defaultInterval() *model.Interval {
+func defaultInterval(user *model.User, category *model.Category) *model.Interval {
 	randmomInt := int64(rand.Intn(1000))
 	timeNow := GetTimeNow()
 
@@ -49,8 +55,8 @@ func defaultInterval() *model.Interval {
 
 	return &model.Interval{
 		UUID:         genUUID(),
-		UserUUID:     "user-1",
-		CategoryUUID: "category-1",
+		UserUUID:     user.UUUID,
+		CategoryUUID: category.UUUID,
 		StartedAt:    timeNow - randmomInt,
 		EndAt:        endAtTime,
 	}
@@ -59,95 +65,26 @@ func defaultInterval() *model.Interval {
 func CreateManyIntervals(
 	resource *db.Resource,
 	ctx context.Context,
+	user *model.User,
+	categoryList *[]model.Category,
 	amount *int,
-	itemList *[]model.Interval,
 ) []model.Interval {
 	if amount == nil {
 		a := 4
 		amount = &a
 	}
-	if itemList == nil {
-		emtpyList := make([]model.Interval, 0, *amount)
-		itemList = &emtpyList
+
+	if user == nil {
+		panic("You have to provide User")
+	}
+
+	itemList := make([]model.Interval, 0, (len(*categoryList) * *amount))
+
+	for _, category := range *categoryList {
 		for i := 0; i < *amount; i++ {
-			item := defaultInterval()
-			*itemList = append(*itemList, *item)
+			obj := CreateOneInterval(resource, ctx, user, &category, nil)
+			itemList = append(itemList, obj)
 		}
 	}
-
-	docs := make([]interface{}, len(*itemList))
-	for i, v := range *itemList {
-		docs[i] = v
-	}
-
-	c := resource.DB.Collection("Interval")
-	_, err := c.InsertMany(ctx, docs)
-	if err != nil {
-		fmt.Printf("InsertMany intervals ERROR, %v", err)
-	}
-
-	stmt, err := c.Find(ctx, bson.D{})
-	if err != nil {
-		fmt.Printf("Find (ALL) intervals ERROR, %v", err)
-	}
-
-	var res []model.Interval
-	err = stmt.All(ctx, &res)
-	if err != nil {
-		fmt.Printf("Decode ERROR intervals, %v", err)
-	}
-
-	return res
+	return itemList
 }
-
-// func GenIntervalsData(resource *db.Resource, ctx context.Context) ([]model.Interval, mongo.Collection) {
-// 	endAt := int64(500)
-// 	intervalCollections := resource.DB.Collection("Interval")
-// 	intervalsInPipline := []model.Interval{
-// 		{
-// 			UUID:         "uuid-1",
-// 			UserUUID:     "user-1",
-// 			CategoryUUID: "category-001",
-// 			StartedAt:    400,
-// 			EndAt:        &endAt,
-// 		},
-// 	}
-
-// 	intervalsOutPipline := []model.Interval{
-// 		{
-// 			UUID:         "uuid-2",
-// 			UserUUID:     "user-1",
-// 			CategoryUUID: "category-001",
-// 			StartedAt:    400,
-// 			EndAt:        &endAt,
-// 		},
-// 		{
-// 			UUID:         "uuid-3",
-// 			UserUUID:     "user-1",
-// 			CategoryUUID: "category-002",
-// 			StartedAt:    400,
-// 			EndAt:        &endAt,
-// 		},
-// 		{
-// 			UUID:         "uuid-4",
-// 			UserUUID:     "user-1",
-// 			CategoryUUID: "category-003",
-// 			StartedAt:    400,
-// 			EndAt:        nil,
-// 		},
-// 	}
-// 	allIntervals := append(intervalsInPipline, intervalsOutPipline...)
-
-// 	// Перед отправкой в insertMany без этого переобразования нельзя
-// 	docs := make([]interface{}, len(allIntervals))
-// 	for i, v := range allIntervals {
-// 		docs[i] = v
-// 	}
-
-// 	_, err := intervalCollections.InsertMany(ctx, docs)
-// 	if err != nil {
-// 		log.Fatalf("Intervals not inserted, %v", err)
-// 	}
-
-// 	return intervalsInPipline, *intervalCollections
-// }

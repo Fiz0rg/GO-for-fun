@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"log"
 	"testing"
 	"time"
 	"time_app/app/repository"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestTimeAllByIntervals(t *testing.T) {
@@ -25,8 +23,13 @@ func TestTimeAllByIntervals(t *testing.T) {
 	if db == nil {
 		t.Fatal("DATABASE IS NIL")
 	}
-	arrangeIntervalList, intervalCollection := fixture.GenIntervalsData(db, ctx)
-	arrangeTimeAllList, timeAllCollection := fixture.GenTimeAllData(db, ctx)
+	var amount int = 2
+
+	user := fixture.CreateUser(db, ctx)
+	categoryList := fixture.CreateManyCategories(db, ctx, &user, &amount)
+
+	arrangeIntervalList := fixture.CreateManyIntervals(db, ctx, &user, &categoryList, &amount)
+	arrangeTimeAllList := fixture.CreateManyTimeAll(db, ctx, &user, &categoryList, &amount)
 
 	countTimeRepo := mongodb.NewCountTimeRepository(db)
 
@@ -117,6 +120,5 @@ func subtractionIntervalsTime(intervals []model.Interval) []model.TimeAll {
 	for _, timeAll := range timeMap {
 		timeTotals = append(timeTotals, *timeAll)
 	}
-	log.Printf("RESULT , %v", timeTotals)
 	return timeTotals
 }
