@@ -30,7 +30,6 @@ func updateTimeAllCollection(
 	timeAllCollection *mongo.Collection,
 	interals []model.Interval,
 ) {
-
 	userCategoryMap := make(map[string]model.UserCategory)
 
 	for _, i := range interals {
@@ -60,7 +59,6 @@ func updateTimeAllCollection(
 	}
 	var updateTimeAll []mongo.WriteModel
 	for _, item := range userCategoryMap {
-
 		timeAllFilter := bson.M{
 			"user_uuid":     item.UserUUID,
 			"category_uuid": item.CategoryUUID,

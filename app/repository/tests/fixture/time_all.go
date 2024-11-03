@@ -58,21 +58,14 @@ func CreateManyTimeAll(
 	ctx context.Context,
 	user *model.User,
 	categoryList *[]model.Category,
-	amount *int,
 ) []model.TimeAll {
-	if amount == nil {
-		a := 4
-		amount = &a
-	}
 	if user == nil {
 		panic("You have to provide User")
 	}
-	itemList := make([]model.TimeAll, 0, (len(*categoryList) * *amount))
+	itemList := make([]model.TimeAll, 0, len(*categoryList))
 	for _, category := range *categoryList {
-		for i := 0; i < *amount; i++ {
-			obj := CreateOneTimeAll(resource, ctx, &category, user, nil)
-			itemList = append(itemList, obj)
-		}
+		obj := CreateOneTimeAll(resource, ctx, &category, user, nil)
+		itemList = append(itemList, obj)
 	}
 	return itemList
 }

@@ -46,6 +46,7 @@ func (repo *UpdateTimeRepositoryImpl) TimeCalculation() error {
 	updateTimeDayCollection(ctx, &wg, repo.timeDayCollection, intervals)
 
 	d := deleteUnnecessaryIntervals(ctx, &wg, repo.intervalCollection, intervals)
+
 	if d != nil {
 		log.Panicf("Fail operation by deleteUnnecessaryIntervals, %v", d)
 	}

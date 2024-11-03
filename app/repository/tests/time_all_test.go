@@ -16,31 +16,31 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TestTimeAllByIntervals(t *testing.T) {
+func TestTimeCount(t *testing.T) {
 	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
 	db := test_config.TestDB
 	if db == nil {
 		t.Fatal("DATABASE IS NIL")
 	}
-	var amount int = 2
+	var amount int = 3
+	var intervalAmount int = 10
 
 	user := fixture.CreateUser(db, ctx)
 	categoryList := fixture.CreateManyCategories(db, ctx, &user, &amount)
 
-	arrangeIntervalList := fixture.CreateManyIntervals(db, ctx, &user, &categoryList, &amount)
-	arrangeTimeAllList := fixture.CreateManyTimeAll(db, ctx, &user, &categoryList, &amount)
+	fixture.CreateManyIntervals(db, ctx, &user, &categoryList, &intervalAmount)
+	arrangeTimeAllList := fixture.CreateManyTimeAll(db, ctx, &user, &categoryList)
 
 	countTimeRepo := mongodb.NewCountTimeRepository(db)
+	intervalList := getIntervalsRecords(ctx, db, t)
+	arrangeResult := getArrangeResult(intervalList, arrangeTimeAllList)
 
 	err := countTimeRepo.TimeCalculation()
 	if err != nil {
 		t.Fatalf("Something wrong in repo, %v", err)
 	}
-	arrangeResult := getArrangeResult(arrangeIntervalList, arrangeTimeAllList)
 	resultRepo := getTimeAllRecords(ctx, db, t)
-
-	intervalList := getIntervalsRecords(ctx, db, t)
 
 	assert.Equal(t, arrangeResult, resultRepo)
 	assert.Empty(t, intervalList)
@@ -52,6 +52,7 @@ func TestTimeAllByIntervals(t *testing.T) {
 }
 
 func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll) []model.TimeAll {
+
 	intervalTimeSubtraction := subtractionIntervalsTime(intervals)
 
 	for i := range timeAll {
@@ -104,7 +105,6 @@ func subtractionIntervalsTime(intervals []model.Interval) []model.TimeAll {
 		if interval.EndAt == nil {
 			continue
 		}
-
 		key := fmt.Sprintf("%s-%s", interval.UserUUID, interval.CategoryUUID)
 		if _, exists := timeMap[key]; !exists {
 			timeMap[key] = &model.TimeAll{
@@ -116,9 +116,9 @@ func subtractionIntervalsTime(intervals []model.Interval) []model.TimeAll {
 		timeMap[key].TimeTotal += *interval.EndAt - interval.StartedAt
 	}
 
-	var timeTotals []model.TimeAll
+	timeTotal := make([]model.TimeAll, 0, len(timeMap))
 	for _, timeAll := range timeMap {
-		timeTotals = append(timeTotals, *timeAll)
+		timeTotal = append(timeTotal, *timeAll)
 	}
-	return timeTotals
+	return timeTotal
 }

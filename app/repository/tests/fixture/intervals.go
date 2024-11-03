@@ -68,7 +68,7 @@ func CreateManyIntervals(
 	user *model.User,
 	categoryList *[]model.Category,
 	amount *int,
-) []model.Interval {
+) {
 	if amount == nil {
 		a := 4
 		amount = &a
@@ -86,5 +86,4 @@ func CreateManyIntervals(
 			itemList = append(itemList, obj)
 		}
 	}
-	return itemList
 }

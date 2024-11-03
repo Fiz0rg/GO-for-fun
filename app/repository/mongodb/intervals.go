@@ -51,7 +51,6 @@ func deleteUnnecessaryIntervals(
 ) error {
 	deleteChannel := make(chan []mongo.WriteModel, 5)
 	errorDeleteChannel := make(chan error, 10)
-
 	numDeleteWorkers := 2
 	for i := 0; i < numDeleteWorkers; i++ {
 		wg.Add(1)
@@ -146,12 +145,8 @@ func FormPipeline() mongo.Pipeline {
 				{Key: "records", Value: bson.D{
 					{Key: "$slice", Value: bson.A{
 						"$records",
-						0,
-						bson.D{{Key: "$max", Value: bson.A{
-							bson.D{{Key: "$subtract", Value: bson.A{
-								bson.D{{Key: "$size", Value: "$records"}},
-								1,
-							}}},
+						bson.D{{Key: "$subtract", Value: bson.A{
+							bson.D{{Key: "$size", Value: "$records"}},
 							1,
 						}}},
 					}},
