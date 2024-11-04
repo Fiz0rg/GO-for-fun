@@ -38,7 +38,7 @@ func deleteIntervalsPerfomBulkWrite(ctx context.Context, collection *mongo.Colle
 		if err != nil {
 			errorDeleteChannel <- fmt.Errorf("BulkWrite error: %v", err)
 		} else {
-			fmt.Printf("Bulk write completed for %d deleted\n", len(deletions))
+			fmt.Printf("Completed %d deleted intervals\n", len(deletions))
 		}
 	}
 }
@@ -81,7 +81,7 @@ func deleteUnnecessaryIntervals(
 	return nil
 }
 
-func splitIntervals(intervals []model.Interval) []model.Interval {
+func SplitIntervals(intervals []model.Interval) []model.Interval {
 	var subIntervals []model.Interval
 
 	for _, i := range intervals {

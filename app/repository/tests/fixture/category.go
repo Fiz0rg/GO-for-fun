@@ -22,7 +22,7 @@ func CreateOneCategory(
 	if category == nil {
 		pos := int(1)
 		obj := model.Category{
-			UUUID:    genUUID(),
+			UUUID:    GenUUID(),
 			UserUUID: user.NAME,
 			NAME:     genName(),
 			ICON:     genString(),

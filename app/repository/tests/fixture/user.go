@@ -15,8 +15,8 @@ func CreateUser(
 ) model.User {
 	c := resource.DB.Collection("User")
 	obj := model.User{
-		UUUID: genUUID(),
-		NAME:  genUUID(),
+		UUUID: GenUUID(),
+		NAME:  GenUUID(),
 		EMAIL: "some@.com",
 	}
 	stmt, err := c.InsertOne(ctx, obj)

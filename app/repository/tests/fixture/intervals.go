@@ -54,7 +54,7 @@ func defaultInterval(user *model.User, category *model.Category) *model.Interval
 	}()
 
 	return &model.Interval{
-		UUID:         genUUID(),
+		UUID:         GenUUID(),
 		UserUUID:     user.UUUID,
 		CategoryUUID: category.UUUID,
 		StartedAt:    timeNow - randmomInt,
@@ -68,7 +68,7 @@ func CreateManyIntervals(
 	user *model.User,
 	categoryList *[]model.Category,
 	amount *int,
-) {
+) []model.Interval {
 	if amount == nil {
 		a := 4
 		amount = &a
@@ -86,4 +86,5 @@ func CreateManyIntervals(
 			itemList = append(itemList, obj)
 		}
 	}
+	return itemList
 }

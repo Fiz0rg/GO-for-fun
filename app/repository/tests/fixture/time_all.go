@@ -45,7 +45,7 @@ func CreateOneTimeAll(
 
 func defaultTimeAll(user *model.User, category *model.Category) *model.TimeAll {
 	t := model.TimeAll{
-		UUID:         genUUID(),
+		UUID:         GenUUID(),
 		UserUUID:     user.UUUID,
 		CategoryUUID: category.UUUID,
 		TimeTotal:    int64(rand.Intn(1000)),
