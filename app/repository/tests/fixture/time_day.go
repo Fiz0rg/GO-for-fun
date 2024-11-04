@@ -43,7 +43,7 @@ func CreateOneTimeDay(
 
 func defaultTimeDay(user *model.User, category *model.Category) *model.TimeDay {
 	return &model.TimeDay{
-		UUUID:        genUUID(),
+		UUUID:        GenUUID(),
 		UserUUID:     user.UUUID,
 		CategoryUUID: category.UUUID,
 		TimeDay:      GetTimeNow(),
@@ -56,23 +56,15 @@ func CreateManyTimeDay(
 	ctx context.Context,
 	user *model.User,
 	categoryList *[]model.Category,
-	amount *int,
 ) []model.TimeDay {
-	if amount == nil {
-		a := 4
-		amount = &a
-	}
-
 	if user == nil {
 		panic("You have to provide User")
 	}
 
-	itemList := make([]model.TimeDay, 0, (len(*categoryList) * *amount))
+	itemList := make([]model.TimeDay, 0, len(*categoryList))
 	for _, category := range *categoryList {
-		for i := 0; i < *amount; i++ {
-			obj := CreateOneTimeDay(resource, ctx, user, &category, nil)
-			itemList = append(itemList, obj)
-		}
+		obj := CreateOneTimeDay(resource, ctx, user, &category, nil)
+		itemList = append(itemList, obj)
 	}
 	return itemList
 }

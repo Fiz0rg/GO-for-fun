@@ -12,7 +12,7 @@ func GetTimeNow() int64 {
 	return res.Unix()
 }
 
-func genUUID() string {
+func GenUUID() string {
 	return uuid.New().String()
 }
 

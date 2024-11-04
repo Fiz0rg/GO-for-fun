@@ -17,9 +17,9 @@ func updateTimeAllPerformBulkWrite(ctx context.Context, collection *mongo.Collec
 		bulkOpts := options.BulkWrite().SetOrdered(false) // неупорядоченная обработка для монги
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
 		if err != nil {
-			errorChannel <- fmt.Errorf("BulkWrite error: %v", err)
+			errorChannel <- fmt.Errorf("bulk write error (timeall): %v", err)
 		} else {
-			fmt.Printf("Bulk write completed for %d updates\n", len(updates))
+			fmt.Printf("TimeAll %d updates by intervals \n", len(updates))
 		}
 	}
 }

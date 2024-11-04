@@ -17,7 +17,7 @@ func updateTimeDayCollection(
 	collection *mongo.Collection,
 	intervals []model.Interval,
 ) {
-	i := splitIntervals(intervals)
+	i := SplitIntervals(intervals)
 
 	batchSize := 150
 	updatesChanes := make(chan []mongo.WriteModel, 10)
@@ -65,7 +65,7 @@ func updateTimeDayPerformBulkWrite(ctx context.Context, collection *mongo.Collec
 		if err != nil {
 			errorChanel <- fmt.Errorf("bulk write err, %v", err)
 		} else {
-			fmt.Printf("Updated %d TimDay by Bulk Write\n", len(updates))
+			fmt.Printf("Updated %d TimeDay by intervals (Bulk Write)\n", len(updates))
 		}
 	}
 }
