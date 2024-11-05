@@ -11,8 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func updateTimeAllPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, wg *sync.WaitGroup, errorChannel chan<- error) {
-	defer wg.Done()
+func updateTimeAllPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, errorChannel chan<- error) {
 	if len(updates) > 0 {
 		bulkOpts := options.BulkWrite().SetOrdered(false) // неупорядоченная обработка для монги
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
@@ -46,7 +45,7 @@ func updateTimeAllCollection(
 			userCategoryMap[key] = newItem
 		}
 	}
-	batchSize := 50
+	batchSize := 30
 	updatesChannel := make(chan []mongo.WriteModel, 5)
 	errorUpdateChannel := make(chan error, 10)
 
@@ -54,7 +53,10 @@ func updateTimeAllCollection(
 	for i := 0; i < numUpdateWorkers; i++ {
 		wg.Add(1)
 		go func() {
-			updateTimeAllPerformBulkWrite(ctx, timeAllCollection, <-updatesChannel, wg, errorUpdateChannel)
+			defer wg.Done()
+			for updateBatch := range updatesChannel {
+				updateTimeAllPerformBulkWrite(ctx, timeAllCollection, updateBatch, errorUpdateChannel)
+			}
 		}()
 	}
 	var updateTimeAll []mongo.WriteModel
