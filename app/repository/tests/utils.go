@@ -5,8 +5,8 @@ import (
 	"time_app/app/repository/model"
 )
 
-// Equal filter for pipeline
-func filterExpectedUUIDs(rawIntervalList []model.Interval) []model.Interval {
+// Equal filter for interval repo pipeline
+func filterIntervalsEqualPipeline(rawIntervalList []model.Interval) []model.Interval {
 	intervalMap := make(map[string][]model.Interval)
 	for _, interval := range rawIntervalList {
 		if interval.EndAt != nil {

@@ -30,8 +30,7 @@ func (repo *UpdateTimeRepositoryImpl) getIntervalRecords(ctx context.Context) []
 	return res
 }
 
-func deleteIntervalsPerfomBulkWrite(ctx context.Context, collection *mongo.Collection, deletions []mongo.WriteModel, waitGroup *sync.WaitGroup, errorDeleteChannel chan error) {
-	defer waitGroup.Done()
+func deleteIntervalsPerfomBulkWrite(ctx context.Context, collection *mongo.Collection, deletions []mongo.WriteModel, errorDeleteChannel chan error) {
 	if len(deletions) > 0 {
 		bulkOpt := options.BulkWrite().SetOrdered(false)
 		_, err := collection.BulkWrite(ctx, deletions, bulkOpt)
@@ -50,16 +49,23 @@ func deleteUnnecessaryIntervals(
 	intervals []model.Interval,
 ) error {
 	deleteChannel := make(chan []mongo.WriteModel, 5)
+	defer close(deleteChannel)
+
 	errorDeleteChannel := make(chan error, 10)
+	defer close(errorDeleteChannel)
+
 	numDeleteWorkers := 2
 	for i := 0; i < numDeleteWorkers; i++ {
 		wg.Add(1)
 		go func() {
-			deleteIntervalsPerfomBulkWrite(ctx, interval_collection, <-deleteChannel, wg, errorDeleteChannel)
+			defer wg.Done()
+			for deleteBatch := range deleteChannel {
+				deleteIntervalsPerfomBulkWrite(ctx, interval_collection, deleteBatch, errorDeleteChannel)
+			}
 		}()
 	}
 
-	batchSize := 100
+	batchSize := 30
 
 	var deleteIntervals []mongo.WriteModel
 	for _, i := range intervals {
@@ -74,10 +80,9 @@ func deleteUnnecessaryIntervals(
 	}
 
 	if len(deleteIntervals) > 0 {
+		log.Print("DELETE REST INTERVASLS")
 		deleteChannel <- deleteIntervals
 	}
-
-	close(deleteChannel)
 	return nil
 }
 

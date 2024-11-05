@@ -17,21 +17,25 @@ func updateTimeDayCollection(
 	collection *mongo.Collection,
 	intervals []model.Interval,
 ) {
-	i := SplitIntervals(intervals)
+	intervals = SplitIntervals(intervals)
 
-	batchSize := 150
+	batchSize := 30
 	updatesChanes := make(chan []mongo.WriteModel, 10)
 	errorChanel := make(chan error, 10)
+	defer close(errorChanel)
 
 	numUpdateWorkers := 2
 	for i := 0; i < numUpdateWorkers; i++ {
 		waitGroup.Add(1)
 		go func() {
-			updateTimeDayPerformBulkWrite(ctx, collection, <-updatesChanes, waitGroup, errorChanel)
+			defer waitGroup.Done()
+			for updateBatch := range updatesChanes {
+				updateTimeDayPerformBulkWrite(ctx, collection, updateBatch, errorChanel)
+			}
 		}()
 	}
 	var updateTimeDay []mongo.WriteModel
-	for _, item := range i {
+	for _, item := range intervals {
 		timeDayfilter := bson.M{
 			"user_uuid":     item.UserUUID,
 			"category_uuid": item.CategoryUUID,
@@ -45,20 +49,19 @@ func updateTimeDayCollection(
 		}
 		updateRequest := mongo.NewUpdateOneModel().SetFilter(timeDayfilter).SetUpdate(update).SetUpsert(true)
 		updateTimeDay = append(updateTimeDay, updateRequest)
+
 		if len(updateTimeDay) == batchSize {
 			updatesChanes <- updateTimeDay
 			updateTimeDay = nil
 		}
 	}
 	if len(updateTimeDay) > 0 {
-
 		updatesChanes <- updateTimeDay
 	}
 	close(updatesChanes)
 }
 
-func updateTimeDayPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, waitGroup *sync.WaitGroup, errorChanel chan<- error) {
-	defer waitGroup.Done()
+func updateTimeDayPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, errorChanel chan<- error) {
 	if len(updates) > 0 {
 		bulkOpts := options.BulkWrite().SetOrdered(false)
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
