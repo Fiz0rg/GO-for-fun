@@ -2,8 +2,6 @@ package test
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"testing"
 	"time"
 	"time_app/app/repository"
@@ -14,6 +12,7 @@ import (
 	test_config "time_app/tests"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -21,34 +20,32 @@ func TestTimeCount(t *testing.T) {
 	ctx, cancel := repository.InitContext(5 * time.Second)
 	defer cancel()
 	db := test_config.TestDB
-	if db == nil {
-		t.Fatal("DATABASE IS NIL")
-	}
+	require.NotNil(t, db, "Database connection should not be nil")
 
-	arrangeTimeDay, arrangeTimeAll := arrangeData(db, ctx)
+	expectedTimeDay, expectedTimeAll := setupTestData(db, ctx)
 
 	countTimeRepo := mongodb.NewCountTimeRepository(db)
 	err := countTimeRepo.TimeCalculation()
-	if err != nil {
-		t.Fatalf("Something wrong in repo, %v", err)
-	}
+	assert.NoError(t, err, "TimeCalculation method should be without errors")
+
 	resultTimeAll := getTimeAllRecords(ctx, db, t)
 	resultTimeDay := getTimeDayRecords(ctx, db, t)
 
 	intervalListAfterCount := getIntervalsRecords(ctx, db, t)
-	assert.Equal(t, arrangeTimeAll, resultTimeAll)
-	assert.Equal(t, arrangeTimeDay, resultTimeDay)
-	assert.Empty(t, intervalListAfterCount)
+
+	assert.Equal(t, expectedTimeAll, resultTimeAll, "TimeAll missmatch")
+	assert.Equal(t, expectedTimeDay, resultTimeDay, "TimeDay missmatch")
+	assert.Empty(t, intervalListAfterCount, "Intervals list after repo should me empty")
 
 	t.Cleanup(func() {
-		time.Sleep(3000 * time.Microsecond)
+		time.Sleep(10 * time.Microsecond)
 		test_config.CleanupTestData(db)
 	})
 }
 
-func arrangeData(db *db.Resource, ctx context.Context) ([]model.TimeDay, []model.TimeAll) {
-	var categoryAmount int = 3
-	var intervalAmount int = 10
+func setupTestData(db *db.Resource, ctx context.Context) ([]model.TimeDay, []model.TimeAll) {
+	var categoryAmount int = 10
+	var intervalAmount int = 100
 
 	user := fixture.CreateUser(db, ctx)
 	categoryList := fixture.CreateManyCategories(db, ctx, &user, &categoryAmount)
@@ -62,22 +59,16 @@ func arrangeData(db *db.Resource, ctx context.Context) ([]model.TimeDay, []model
 	return arrangeTimeDay, arrangeTimeAll
 }
 
-func getTimeDayRecords(ctx context.Context, db *db.Resource, t *testing.T) []model.TimeDay {
-	c := db.DB.Collection("TimeDay")
-	stmt, err := c.Find(ctx, bson.M{})
-	if err != nil {
-		t.Fatalf("Find TimeDay Error, %v", err)
-	}
-	var res []model.TimeDay
-	err = stmt.All(ctx, &res)
-	if err != nil {
-		log.Printf("Decode TimeDay Error, %v", err)
-	}
-	return res
+func isSameCategoryAndUser(interval model.Interval, timeDay model.TimeDay) bool {
+	return timeDay.UserUUID == interval.UserUUID && timeDay.CategoryUUID == interval.CategoryUUID
+}
+
+func isWithinDayRange(interval model.Interval, timeDay model.TimeDay) bool {
+	return interval.StartedAt <= timeDay.TimeDay && timeDay.TimeDay <= int64(*interval.EndAt)
 }
 
 func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll, timeDays []model.TimeDay) ([]model.TimeAll, []model.TimeDay) {
-	filteredInterval := filterExpectedUUIDs(intervals)
+	filteredInterval := filterIntervalsEqualPipeline(intervals)
 
 	for i := range timeAll {
 		for _, interval := range filteredInterval {
@@ -89,14 +80,9 @@ func getArrangeResult(intervals []model.Interval, timeAll []model.TimeAll, timeD
 
 	splittedIntervalsByDays := mongodb.SplitIntervals(filteredInterval)
 	for t := range timeDays {
-		for _, i := range splittedIntervalsByDays {
-
-			sameUser := timeDays[t].UserUUID == i.UserUUID
-			sameCategory := timeDays[t].CategoryUUID == i.CategoryUUID
-			withinTimeRange := i.StartedAt <= timeDays[t].TimeDay && timeDays[t].TimeDay <= int64(*i.EndAt)
-
-			if sameUser && sameCategory && withinTimeRange {
-				timeDays[t].TimeTotal += int(*i.EndAt) - int(i.StartedAt)
+		for _, interval := range splittedIntervalsByDays {
+			if isSameCategoryAndUser(interval, timeDays[t]) && isWithinDayRange(interval, timeDays[t]) {
+				timeDays[t].TimeTotal += int(*interval.EndAt) - int(interval.StartedAt)
 			}
 		}
 	}
@@ -108,31 +94,34 @@ func getIntervalsRecords(ctx context.Context, resource *db.Resource, t *testing.
 	pipeline := mongodb.FormPipeline()
 	collection := resource.DB.Collection("Interval")
 	records, err := collection.Aggregate(ctx, pipeline)
-	if err != nil {
-		t.Fatalf("Err getting interval records, %v", err)
-	}
+	assert.NoError(t, err, "Failed to aggregate intervals")
 
-	var res []model.Interval
-	err = records.All(ctx, &res)
-	if err != nil {
-		fmt.Printf("Decode interval Error, %v", err)
-	}
+	var decodeItems []model.Interval
+	err = records.All(ctx, &decodeItems)
+	assert.NoError(t, err, "Failed to decode intervals")
 
-	return res
+	return decodeItems
 }
 
 func getTimeAllRecords(ctx context.Context, resource *db.Resource, t *testing.T) []model.TimeAll {
 	collection := resource.DB.Collection("TimeAll")
 	records, err := collection.Find(ctx, bson.M{})
-	if err != nil {
-		t.Fatalf("Err getting TimeAll records, %v", err)
-	}
+	assert.NoError(t, err, "Failed to find TimeAll")
 
 	var res []model.TimeAll
 	err = records.All(ctx, &res)
-	if err != nil {
-		fmt.Printf("Decode TimeAll Error, %v", err)
-	}
+	assert.NoError(t, err, "Failed to decode TimeAll")
 
+	return res
+}
+
+func getTimeDayRecords(ctx context.Context, db *db.Resource, t *testing.T) []model.TimeDay {
+	c := db.DB.Collection("TimeDay")
+	stmt, err := c.Find(ctx, bson.M{})
+	assert.NoError(t, err, "Failed to find TimeDay")
+
+	var res []model.TimeDay
+	err = stmt.All(ctx, &res)
+	assert.NoError(t, err, "Failed to decode TimeDay")
 	return res
 }
