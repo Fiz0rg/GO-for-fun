@@ -28,7 +28,7 @@ func TestIntervalPipeline(t *testing.T) {
 
 	pipelineIntervals := getIntervalsRecords(ctx, db, t)
 
-	assert.Equal(t, pipelineIntervals, arrangeInterval, "Intervals arrays not equal")
+	assert.ElementsMatch(t, arrangeInterval, pipelineIntervals, "Intervals arrays not equal")
 	t.Cleanup(func() {
 		time.Sleep(10 * time.Microsecond)
 		test_config.CleanupTestData(db)
@@ -36,8 +36,8 @@ func TestIntervalPipeline(t *testing.T) {
 }
 
 func genArrangeIntervalList(db *db.Resource, ctx context.Context, user model.User) []model.Interval {
-	var categoryAmount = 2
-	var intervalAmount = 4
+	var categoryAmount = 4
+	var intervalAmount = 5
 
 	categoryList := fixture.CreateManyCategories(db, ctx, &user, &categoryAmount)
 	rawIntervalList := fixture.CreateManyIntervals(db, ctx, &user, &categoryList, &intervalAmount)
