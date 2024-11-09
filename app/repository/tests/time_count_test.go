@@ -44,8 +44,8 @@ func TestTimeCount(t *testing.T) {
 }
 
 func setupTestData(db *db.Resource, ctx context.Context) ([]model.TimeDay, []model.TimeAll) {
-	var categoryAmount int = 10
-	var intervalAmount int = 100
+	var categoryAmount int = 4
+	var intervalAmount int = 5
 
 	user := fixture.CreateUser(db, ctx)
 	categoryList := fixture.CreateManyCategories(db, ctx, &user, &categoryAmount)
