@@ -13,7 +13,7 @@ import (
 
 func updateTimeAllPerformBulkWrite(ctx context.Context, collection *mongo.Collection, updates []mongo.WriteModel, errorChannel chan<- error) {
 	if len(updates) > 0 {
-		bulkOpts := options.BulkWrite().SetOrdered(false) // неупорядоченная обработка для монги
+		bulkOpts := options.BulkWrite().SetOrdered(false)
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
 		if err != nil {
 			errorChannel <- fmt.Errorf("bulk write error (timeall): %v", err)

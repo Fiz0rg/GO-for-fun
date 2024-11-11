@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func (repo *UpdateTimeRepositoryImpl) getIntervalRecords(ctx context.Context) []model.Interval {
+func (repo *CountTimeRepositoryImpl) getIntervalRecords(ctx context.Context) []model.Interval {
 	pipeline := FormPipeline()
 	cursor, err := repo.intervalCollection.Aggregate(ctx, pipeline)
 

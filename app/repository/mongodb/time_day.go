@@ -66,7 +66,7 @@ func updateTimeDayPerformBulkWrite(ctx context.Context, collection *mongo.Collec
 		bulkOpts := options.BulkWrite().SetOrdered(false)
 		_, err := collection.BulkWrite(ctx, updates, bulkOpts)
 		if err != nil {
-			errorChanel <- fmt.Errorf("bulk write err, %v", err)
+			errorChanel <- fmt.Errorf("bulk write err (timeday), %v", err)
 		} else {
 			fmt.Printf("Updated %d TimeDay by intervals (Bulk Write)\n", len(updates))
 		}

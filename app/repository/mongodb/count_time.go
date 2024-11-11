@@ -10,24 +10,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var CountTimeRepo UpdateTimeAllCollectionRepository
-
-type UpdateTimeRepositoryImpl struct {
+type CountTimeRepositoryImpl struct {
 	resource           *db.Resource
 	intervalCollection *mongo.Collection
 	timeAllCollection  *mongo.Collection
 	timeDayCollection  *mongo.Collection
 }
 
-type UpdateTimeAllCollectionRepository interface {
+type CountTimeRepository interface {
 	TimeCalculation() error
 }
 
-func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionRepository {
+func NewCountTimeRepository(resource *db.Resource) CountTimeRepository {
 	timeDayCollection := resource.DB.Collection("TimeDay")
 	intervalCollection := resource.DB.Collection("Interval")
 	timeAllCollection := resource.DB.Collection("TimeAll")
-	countTimeRepo := &UpdateTimeRepositoryImpl{
+	countTimeRepo := &CountTimeRepositoryImpl{
 		resource:           resource,
 		intervalCollection: intervalCollection,
 		timeAllCollection:  timeAllCollection,
@@ -36,21 +34,23 @@ func NewCountTimeRepository(resource *db.Resource) UpdateTimeAllCollectionReposi
 	return countTimeRepo
 }
 
-func (repo *UpdateTimeRepositoryImpl) TimeCalculation() error {
+func (repo *CountTimeRepositoryImpl) TimeCalculation() error {
 	ctx, cancel := repository.InitContext(1 * time.Second)
 	defer cancel()
-	var wg sync.WaitGroup
 
 	intervals := repo.getIntervalRecords(ctx)
-	updateTimeAllCollection(ctx, &wg, repo.timeAllCollection, intervals)
-	updateTimeDayCollection(ctx, &wg, repo.timeDayCollection, intervals)
 
-	d := deleteUnnecessaryIntervals(ctx, &wg, repo.intervalCollection, intervals)
+	var wgUpdate sync.WaitGroup
+	updateTimeAllCollection(ctx, &wgUpdate, repo.timeAllCollection, intervals)
+	updateTimeDayCollection(ctx, &wgUpdate, repo.timeDayCollection, intervals)
+	wgUpdate.Wait()
 
+	var wgDelete sync.WaitGroup
+	d := deleteUnnecessaryIntervals(ctx, &wgDelete, repo.intervalCollection, intervals)
 	if d != nil {
 		log.Panicf("Fail operation by deleteUnnecessaryIntervals, %v", d)
 	}
+	wgDelete.Wait()
 
-	wg.Wait()
 	return nil
 }
